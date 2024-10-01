@@ -12,23 +12,32 @@ class UserSubmissionViewSet(viewsets.ModelViewSet):
     """
     queryset = UserSubmission.objects.all()
     serializer_class = UserSubmissionSerializer
+
     def get_serializer_class(self):
+        """
+        Return the appropriate serializer class based on the action.
+        """
         if self.action in ['create', 'update', 'partial_update']:
             return UserSubmissionSerializer
         return UserSubmissionReadSerializer
 
     def create(self, request, *args, **kwargs):
+        """
+        Create a new user submission and initiate the scoring task.
+        """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             try:
+                # Retrieve the associated job posting
                 job_posting = JobPosting.objects.get(id=serializer.validated_data['job_posting'].id)
                 
                 # Create the submission
                 submission = serializer.save(company=job_posting.company)
 
-                # Initiate the scoring task
+                # Initiate the scoring task asynchronously
                 task = score_submission.delay(submission.id)
                 
+                # Prepare the response data
                 response_data = {
                     'message': 'Submission received and scoring task started',
                     'task_id': task.id,
@@ -42,7 +51,11 @@ class UserSubmissionViewSet(viewsets.ModelViewSet):
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific user submission.
+        """
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance)

@@ -1,4 +1,3 @@
-# tasks.py
 from celery import shared_task
 from .services.scoring_service.scoring_service_factory import ScoringServiceFactory
 
