@@ -58,4 +58,5 @@ The project demonstrates proficiency in Object-Oriented Programming (OOP) design
 - AI training for resume scoring.
 - Develop a React.js front end.
 - Implement unit testing for user_scoring services and serializers
+- Implement unit testing for job_postings services and serializers
 - Implement integration testing
