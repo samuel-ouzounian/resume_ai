@@ -1,0 +1,54 @@
+import requests
+import celery
+from celery import Celery
+
+# This should be imported from .env instead of written out.
+WEBHOOK_URL = 'https://example.com/webhook'
+
+def post_to_webhook(payload):
+    """Post a message to the webhook."""
+    result = requests.post(WEBHOOK_URL, json=payload)
+    return result
+
+def on_success_callback(self, retval, task_id, args, kwargs):
+    """Post a success message to the webhook as a callback for tasks."""
+    message = f"{self.name} success."
+    success_data = {
+        "status": "success",
+        "name": self.name,
+        "task_id": task_id,
+        "args": str(args),
+        "kwargs": str(kwargs),
+        "return": str(retval),
+        "message": message,
+        "link": f'https://flower.example.com/task/{task_id}'
+    }
+    post_to_webhook(success_data)
+
+def on_failure_callback(self, exc, task_id, args, kwargs, einfo):
+    """Post a failure message to the webhook as a callback for tasks."""
+    message = f"{self.name} failure."
+    failure_data = {
+        "status": "failure",
+        "name": self.name,
+        "task_id": task_id,
+        "args": str(args),
+        "kwargs": str(kwargs),
+        "exception": str(exc),
+        "info": str(einfo),
+        "message": message,
+        "link": f'https://flower.example.com/task/{task_id}'
+    }
+    post_to_webhook(failure_data)
+
+app = Celery('schedule')
+
+config_object = 'celery.config'
+app.config_from_object(config_object)
+
+# Patch the Task handlers with our webhook post functions
+app.Task.on_success = on_success_callback
+app.Task.on_failure = on_failure_callback
+
+if __name__ == '__main__':
+    app.start()

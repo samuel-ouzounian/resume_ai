@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  django:
+    build: ./backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+      - sqlite_data:/app/db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    env_file:
+      - ./backend/.env
+
+  celery:
+    build: ./backend
+    command: celery -A resume_ai worker -l DEBUG
+    volumes:
+      - ./backend:/app
+      - sqlite_data:/app/db
+    depends_on:
+      - redis
+      - django
+
+  flower:
+    build: ./backend
+    # --basic-auth=user:pswd <- Flower authentication
+    command: celery -A resume_ai flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery
+
+  react:
+    build: ./frontend
+    command: npm start
+    ports:
+      - "3000:3000"
+    depends_on:
+      - django
+
+volumes:
+  sqlite_data:

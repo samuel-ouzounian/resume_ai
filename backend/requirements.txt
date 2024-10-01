@@ -1,0 +1,10 @@
+Django==3.2.23
+djangorestframework==3.13.1
+openai==1.50.2
+python-dotenv==1.0.1
+replicate==0.34.1
+uuid6==2024.7.10
+django-cors-headers
+celery
+redis
+flower
